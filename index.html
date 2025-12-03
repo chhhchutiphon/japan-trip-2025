@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Japan Planner: SECURE MODE 🛡️</title>
+    <title>Japan Planner: FINAL MOBILE 🇯🇵</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    
     <script src="https://bernardo-castilho.github.io/DragDropTouch/DragDropTouch.js"></script>
 
     <style>
@@ -14,15 +15,19 @@
         /* Top Bar */
         #top-bar { background-color: #2c3e50; color: white; padding: 8px 10px; display: flex; gap: 8px; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 20; flex-wrap: wrap; }
         .app-title { font-weight: bold; font-size: 14px; margin-right: auto; white-space: nowrap; }
+        
+        /* Buttons */
         .action-group { display: flex; gap: 5px; }
         .btn-top { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 4px; transition: 0.2s; white-space: nowrap; }
         .btn-top:hover { background: rgba(255,255,255,0.3); }
         .btn-top.danger { background: #c0392b; border-color: #e74c3c; }
         
+        /* Layout */
         #container { display: flex; flex: 1; overflow: hidden; position: relative; }
         #sidebar { width: 450px; background: #e0e6ed; display: flex; flex-direction: column; border-right: 1px solid #ddd; z-index: 10; transition: 0.3s; }
-        #map { flex: 1; background: #e0e6ed; display: flex; justify-content: center; align-items: center; color: #7f8c8d; }
+        #map { flex: 1; }
 
+        /* 🔥 Mobile Layout */
         @media (max-width: 768px) {
             #container { flex-direction: column-reverse; }
             #sidebar { width: 100%; height: 55%; border-right: none; border-top: 1px solid #ccc; }
@@ -69,12 +74,14 @@
         .time-display { font-weight: bold; color: #2c3e50; }
         .duration-edit { width: 30px; border: 1px solid #ddd; border-radius: 3px; font-size: 10px; text-align: center; color: #555; margin-left: 5px; }
         
+        /* Memo Area */
         .memo-area { margin-top: 5px; width: 100%; box-sizing: border-box; font-family: 'Sarabun'; font-size: 11px; border: 1px solid #eee; background: #fffffa; padding: 4px; border-radius: 3px; resize: none; display: none; }
         .memo-area.active { display: block; }
         .btn-memo { font-size: 10px; cursor: pointer; opacity: 0.5; margin-left: 5px; }
         .btn-memo:hover { opacity: 1; }
         .btn-memo.has-note { opacity: 1; color: #f39c12; }
 
+        /* Connector */
         .connector-wrapper { display: flex; flex-direction: column; margin-left: 28px; border-left: 2px dashed #ccc; padding: 5px 0 5px 15px; }
         .connector-start { border-left: 2px dashed #2ecc71; }
         .connector-return { border-left: 2px dashed #e74c3c; opacity: 0.8; }
@@ -90,6 +97,7 @@
         .flight-time-row { display: flex; align-items: center; gap: 3px; font-size: 10px; margin-top: 3px; }
         .flight-input { width: 50px; border: 1px solid #bdc3c7; border-radius: 3px; padding: 1px; font-family: 'Sarabun'; font-size: 10px; }
 
+        /* Modal */
         #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: none; justify-content: center; align-items: center; }
         .modal-box { background: white; padding: 20px; border-radius: 8px; width: 300px; text-align: center; }
         .modal-btn { display: block; width: 100%; padding: 10px; margin-bottom: 8px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; }
@@ -98,29 +106,9 @@
         .btn-route-day { background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.5); color:white; cursor:pointer; border-radius:4px; font-size:11px; padding:2px 8px; margin-right:5px; }
         
         #file-input { display: none; }
-
-        /* API Key Modal */
-        #api-key-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: flex; justify-content: center; align-items: center; }
-        .api-box { background: white; padding: 30px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .api-input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin: 15px 0; font-size: 14px; box-sizing: border-box; }
-        .btn-save-key { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
-        .api-note { font-size: 12px; color: #7f8c8d; margin-top: 10px; text-align: left; }
     </style>
 </head>
 <body>
-
-    <div id="api-key-modal" style="display:none;">
-        <div class="api-box">
-            <div style="font-size:20px; font-weight:bold; margin-bottom:10px;">🔐 Google Maps API Key</div>
-            <div style="font-size:13px; color:#555;">เพื่อความปลอดภัย กรุณากรอก API Key ของคุณ<br>(Key จะถูกบันทึกในเครื่องคุณเท่านั้น)</div>
-            <input type="text" id="input-api-key" class="api-input" placeholder="Paste your API Key here...">
-            <button class="btn-save-key" onclick="saveApiKey()">🚀 เริ่มใช้งาน</button>
-            <div class="api-note">
-                * วิธีหา Key: ไปที่ Google Cloud Console > APIs > Credentials<br>
-                * แนะนำ: ตั้งค่า Restrict Domain ให้เป็นเว็บที่คุณใช้งาน
-            </div>
-        </div>
-    </div>
 
     <div id="modal-overlay"><div class="modal-box"><div class="modal-title" id="modal-place-name" style="font-weight:bold;margin-bottom:10px;font-size:16px;"></div><a id="modal-google-link" href="#" target="_blank" style="text-decoration:none;"><button class="modal-btn btn-google">🌏 ดูรูป/รีวิวใน Google Maps</button></a><div style="border-bottom:1px solid #eee;margin-bottom:10px;"></div><div id="modal-options"></div><button class="modal-btn btn-cancel" onclick="closeModal()">ยกเลิก</button></div></div>
 
@@ -131,7 +119,6 @@
             <button class="btn-top" onclick="document.getElementById('file-input').click()">📂 Open</button>
             <button class="btn-top" onclick="copyToClipboard()">📋 Copy</button>
             <button class="btn-top danger" onclick="resetAll()">🗑️</button>
-            <button class="btn-top" onclick="clearApiKey()" style="opacity:0.5">🔑 Key</button>
         </div>
         <div style="flex:1;"></div>
         <div class="filter-group"><label class="filter-item"><input type="checkbox" id="chk-jrpass" onchange="renderApp()"> <span>🎫 JR</span></label></div>
@@ -155,28 +142,20 @@
             </div>
             <div class="budget-footer">รวมค่าเดินทาง: <span id="total-cost" style="color:#f1c40f;">0</span> ¥</div>
         </div>
-        <div id="map">
-            <div id="map-placeholder" style="text-align:center;">
-                <h3>🗺️ รอโหลดแผนที่...</h3>
-                <p>กรุณากรอก API Key เพื่อแสดงผล</p>
-            </div>
-        </div>
+        <div id="map"></div>
     </div>
 
     <script>
         // --- DATABASE ---
         const rawDB = [
-            // AIRPORTS
             {n:"Narita Airport",l:35.7719,g:140.3929,t:"A",r:"Tokyo",s:"Narita-Airport",d:90,tg:["Airport","Flight"],w:1},
             {n:"Haneda Airport",l:35.5494,g:139.7798,t:"A",r:"Tokyo",s:"Haneda-Airport",d:90,tg:["Airport","Flight"],w:1},
             {n:"New Chitose Airport",l:42.7752,g:141.6923,t:"A",r:"Hokkaido",s:"New-Chitose-Airport",d:60,tg:["Airport","Flight"],w:1},
             {n:"Kansai Airport",l:34.4320,g:135.2304,t:"A",r:"Osaka",s:"Kansai-Airport",d:60,tg:["Airport","Flight"],w:1},
             {n:"Fukuoka Airport",l:33.5859,g:130.4507,t:"A",r:"Kyushu",s:"Fukuoka-Airport",d:60,tg:["Airport","Flight"],w:1},
-            // HOTELS
             {n:"APA Hotel Sapporo",l:43.0545,g:141.3550,t:"H",r:"Hokkaido",s:"Susukino",d:0,tg:["Hotel","Budget"],w:1},
             {n:"Shinjuku Prince Hotel",l:35.6940,g:139.7005,t:"H",r:"Tokyo",s:"Shinjuku",d:0,tg:["Hotel","City"],w:1},
             {n:"Swissotel Nankai",l:34.6637,g:135.5020,t:"H",r:"Osaka",s:"Namba",d:0,tg:["Hotel","Luxury"],w:1},
-            // SPOTS
             {n:"Odori Park",l:43.0598,g:141.3479,t:"O",r:"Hokkaido",s:"Odori",d:60,tg:["Landmark","Park"],w:1},
             {n:"Sapporo TV Tower",l:43.0611,g:141.3564,t:"I",r:"Hokkaido",s:"Odori",d:45,tg:["Landmark","View"],w:1},
             {n:"Otaru Canal",l:43.1994,g:141.0016,t:"O",r:"Hokkaido",s:"Otaru",d:60,tg:["Romantic","Photo"],w:1},
@@ -219,50 +198,6 @@
         let map, markers=[], polyLines=[], searchMarkers=[], targetPlaceForModal=null, placesService;
         const dayColors = ["#e74c3c","#3498db","#27ae60","#9b59b6","#e67e22","#34495e","#1abc9c","#f1c40f"];
 
-        // --- API KEY MANAGER ---
-        function checkApiKey() {
-            const key = localStorage.getItem("googleMapsKey");
-            if (key) {
-                loadScript(key);
-            } else {
-                document.getElementById("api-key-modal").style.display = "flex";
-            }
-        }
-
-        function saveApiKey() {
-            const key = document.getElementById("input-api-key").value.trim();
-            if(key) {
-                localStorage.setItem("googleMapsKey", key);
-                document.getElementById("api-key-modal").style.display = "none";
-                loadScript(key);
-            } else {
-                alert("กรุณากรอก API Key");
-            }
-        }
-
-        function clearApiKey() {
-            if(confirm("ลบ API Key? (คุณจะต้องกรอกใหม่ในครั้งหน้า)")) {
-                localStorage.removeItem("googleMapsKey");
-                location.reload();
-            }
-        }
-
-        function loadScript(key) {
-            const script = document.createElement("script");
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&callback=initMap&language=th`;
-            script.async = true;
-            script.defer = true;
-            document.body.appendChild(script);
-        }
-
-        // Initialize Check
-        window.onload = () => {
-            initFilters(); 
-            renderApp();
-            document.getElementById("search-box").addEventListener("keyup", handleSearchInput);
-            checkApiKey(); // Start Key Check
-        };
-
         async function initMap() {
             const { Map } = await google.maps.importLibrary("maps");
             const { PlacesService } = await google.maps.importLibrary("places");
@@ -285,6 +220,9 @@
                     openModal(custom);
                 }
             });
+
+            initFilters(); renderApp();
+            document.getElementById("search-box").addEventListener("keyup", handleSearchInput);
         }
 
         function initFilters() {
@@ -461,6 +399,7 @@
             tripPlan.days.forEach((d, i) => {
                 txt += `\n📅 Day ${i+1}\n`;
                 let t = parseTime(tripPlan.daySettings[i].startTime);
+                // Simple version of time logic for text summary
                 d.forEach(p => {
                     let timeStr = formatTime(t);
                     if(p.type === 'Airport' && p.flightArr) timeStr = `🛬 ${p.flightArr}`;
@@ -770,5 +709,8 @@
             if(!b.isEmpty() && searchMarkers.length===0) map.fitBounds(b);
         }
     </script>
+    
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_HERE&libraries=places&callback=initMap&language=th" async defer></script>
+
 </body>
 </html>
