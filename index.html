@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Japan Planner: SECURE MODE 🛡️</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://bernardo-castilho.github.io/DragDropTouch/DragDropTouch.js"></script>
+
+    <style>
+        /* --- CSS STYLES --- */
+        body { margin: 0; font-family: 'Sarabun', sans-serif; height: 100vh; display: flex; flex-direction: column; background-color: #f0f2f5; overflow: hidden; }
+        
+        /* Top Bar */
+        #top-bar { background-color: #2c3e50; color: white; padding: 8px 10px; display: flex; gap: 8px; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 20; flex-wrap: wrap; }
+        .app-title { font-weight: bold; font-size: 14px; margin-right: auto; white-space: nowrap; }
+        .action-group { display: flex; gap: 5px; }
+        .btn-top { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 4px; transition: 0.2s; white-space: nowrap; }
+        .btn-top:hover { background: rgba(255,255,255,0.3); }
+        .btn-top.danger { background: #c0392b; border-color: #e74c3c; }
+        
+        #container { display: flex; flex: 1; overflow: hidden; position: relative; }
+        #sidebar { width: 450px; background: #e0e6ed; display: flex; flex-direction: column; border-right: 1px solid #ddd; z-index: 10; transition: 0.3s; }
+        #map { flex: 1; background: #e0e6ed; display: flex; justify-content: center; align-items: center; color: #7f8c8d; }
+
+        @media (max-width: 768px) {
+            #container { flex-direction: column-reverse; }
+            #sidebar { width: 100%; height: 55%; border-right: none; border-top: 1px solid #ccc; }
+            #map { height: 45%; }
+            #top-bar { padding: 5px; }
+            .app-title { display: none; }
+            .filter-group { display: none; }
+            .btn-top { padding: 6px 10px; font-size: 12px; }
+        }
+
+        /* Search */
+        .search-section { padding: 10px; background: white; border-bottom: 1px solid #bdc3c7; z-index: 5; }
+        .filter-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        select { flex: 1; padding: 6px; border-radius: 4px; border: 1px solid #bdc3c7; font-family: 'Sarabun'; cursor: pointer; }
+        .search-box { width: 100%; padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px; box-sizing: border-box; }
+        #search-results { margin-top: 5px; max-height: 250px; overflow-y: auto; border: 1px solid #bdc3c7; background: white; border-radius: 5px; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: absolute; width: 90%; z-index: 100; }
+        .result-item { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: 0.1s; }
+        .result-item:hover { background-color: #eaf2f8; }
+        
+        /* Planner Area */
+        #planner-area { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .day-container { background: #f8f9fa; border-radius: 6px; border: 1px solid #ddd; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .day-header { padding: 8px 12px; color: white; display: flex; justify-content: space-between; align-items: center; font-weight: bold; cursor: pointer; user-select: none; font-size: 14px; }
+        .day-bucket { background: #7f8c8d; } 
+        .list-content { display: block; } .list-content.hidden { display: none; }
+        .place-list-dropzone { min-height: 40px; padding: 8px; background: white; }
+        
+        .time-start-input { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white; border-radius: 4px; padding: 2px 5px; font-family: 'Sarabun'; font-size: 12px; cursor: pointer; width: 60px;}
+        
+        /* Card Styles */
+        .place-card { background: white; border: 1px solid #eee; border-radius: 5px; padding: 8px; margin-bottom: 0px; display: flex; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: grab; border-left: 4px solid #ccc; position: relative; z-index: 2;}
+        .place-card:hover { background-color: #f0f8ff; border-color: #3498db; }
+        .place-card.indoor { border-left-color: #2ecc71; } 
+        .place-card.outdoor { border-left-color: #e67e22; }
+        .place-card.hotel { border-left-color: #95a5a6; background: #f4f6f7; border: 1px solid #d5dbdb; } 
+        .place-card.sleep-here { border-left-color: #27ae60; background: #eafaf1; border: 2px solid #27ae60; }
+        .place-card.airport { border-left-color: #9b59b6; background: #fdfaff; border: 1px solid #d7bde2; } 
+
+        .info-col { flex: 1; cursor: pointer; min-width: 0; } 
+        .card-title { font-weight: bold; font-size: 13px; color: #2c3e50; display: flex; justify-content: space-between; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tag { font-size: 9px; padding: 1px 4px; border-radius: 3px; background: #eee; color: #555; margin-right: 2px; display:inline-block; }
+        
+        .time-col { width: 45px; font-size: 10px; color: #555; text-align: center; border-right: 1px solid #eee; padding-right: 5px; margin-right: 5px; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0; }
+        .time-display { font-weight: bold; color: #2c3e50; }
+        .duration-edit { width: 30px; border: 1px solid #ddd; border-radius: 3px; font-size: 10px; text-align: center; color: #555; margin-left: 5px; }
+        
+        .memo-area { margin-top: 5px; width: 100%; box-sizing: border-box; font-family: 'Sarabun'; font-size: 11px; border: 1px solid #eee; background: #fffffa; padding: 4px; border-radius: 3px; resize: none; display: none; }
+        .memo-area.active { display: block; }
+        .btn-memo { font-size: 10px; cursor: pointer; opacity: 0.5; margin-left: 5px; }
+        .btn-memo:hover { opacity: 1; }
+        .btn-memo.has-note { opacity: 1; color: #f39c12; }
+
+        .connector-wrapper { display: flex; flex-direction: column; margin-left: 28px; border-left: 2px dashed #ccc; padding: 5px 0 5px 15px; }
+        .connector-start { border-left: 2px dashed #2ecc71; }
+        .connector-return { border-left: 2px dashed #e74c3c; opacity: 0.8; }
+        .connector-flight { border-left: 2px dashed #9b59b6; padding: 5px; background: #fdfaff; border-radius: 5px; margin-bottom: 5px;} 
+        
+        .nav-btn { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; background: #3498db; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; }
+        .nav-btn.flight { background: #9b59b6; }
+        .hotel-start-label { font-size: 10px; background: #2c3e50; color: white; padding: 1px 6px; border-radius: 10px; display: inline-block; margin-bottom: 3px; }
+        
+        .sleep-checkbox-label { font-size: 10px; display: inline-flex; align-items: center; gap: 3px; background: white; padding: 1px 5px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
+        .sleep-checkbox-label.checked { background: #27ae60; color: white; border-color: #27ae60; }
+
+        .flight-time-row { display: flex; align-items: center; gap: 3px; font-size: 10px; margin-top: 3px; }
+        .flight-input { width: 50px; border: 1px solid #bdc3c7; border-radius: 3px; padding: 1px; font-family: 'Sarabun'; font-size: 10px; }
+
+        #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: none; justify-content: center; align-items: center; }
+        .modal-box { background: white; padding: 20px; border-radius: 8px; width: 300px; text-align: center; }
+        .modal-btn { display: block; width: 100%; padding: 10px; margin-bottom: 8px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; }
+        .btn-google { background: #2ecc71; margin-bottom: 15px; } .btn-bucket { background: #7f8c8d; } .btn-day { background: #3498db; } .btn-cancel { background: #fff; color: #555; border: 1px solid #ddd; }
+        .budget-footer { padding: 10px; background: #34495e; color: white; text-align: center; font-weight: bold; font-size: 13px; }
+        .btn-route-day { background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.5); color:white; cursor:pointer; border-radius:4px; font-size:11px; padding:2px 8px; margin-right:5px; }
+        
+        #file-input { display: none; }
+
+        /* API Key Modal */
+        #api-key-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+        .api-box { background: white; padding: 30px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .api-input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin: 15px 0; font-size: 14px; box-sizing: border-box; }
+        .btn-save-key { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
+        .api-note { font-size: 12px; color: #7f8c8d; margin-top: 10px; text-align: left; }
+    </style>
+</head>
+<body>
+
+    <div id="api-key-modal" style="display:none;">
+        <div class="api-box">
+            <div style="font-size:20px; font-weight:bold; margin-bottom:10px;">🔐 Google Maps API Key</div>
+            <div style="font-size:13px; color:#555;">เพื่อความปลอดภัย กรุณากรอก API Key ของคุณ<br>(Key จะถูกบันทึกในเครื่องคุณเท่านั้น)</div>
+            <input type="text" id="input-api-key" class="api-input" placeholder="Paste your API Key here...">
+            <button class="btn-save-key" onclick="saveApiKey()">🚀 เริ่มใช้งาน</button>
+            <div class="api-note">
+                * วิธีหา Key: ไปที่ Google Cloud Console > APIs > Credentials<br>
+                * แนะนำ: ตั้งค่า Restrict Domain ให้เป็นเว็บที่คุณใช้งาน
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-overlay"><div class="modal-box"><div class="modal-title" id="modal-place-name" style="font-weight:bold;margin-bottom:10px;font-size:16px;"></div><a id="modal-google-link" href="#" target="_blank" style="text-decoration:none;"><button class="modal-btn btn-google">🌏 ดูรูป/รีวิวใน Google Maps</button></a><div style="border-bottom:1px solid #eee;margin-bottom:10px;"></div><div id="modal-options"></div><button class="modal-btn btn-cancel" onclick="closeModal()">ยกเลิก</button></div></div>
+
+    <div id="top-bar">
+        <div class="app-title">🇯🇵 Japan Planner</div>
+        <div class="action-group">
+            <button class="btn-top" onclick="exportData()">💾 Save</button>
+            <button class="btn-top" onclick="document.getElementById('file-input').click()">📂 Open</button>
+            <button class="btn-top" onclick="copyToClipboard()">📋 Copy</button>
+            <button class="btn-top danger" onclick="resetAll()">🗑️</button>
+            <button class="btn-top" onclick="clearApiKey()" style="opacity:0.5">🔑 Key</button>
+        </div>
+        <div style="flex:1;"></div>
+        <div class="filter-group"><label class="filter-item"><input type="checkbox" id="chk-jrpass" onchange="renderApp()"> <span>🎫 JR</span></label></div>
+        <input type="file" id="file-input" accept=".json" onchange="importData(this)">
+    </div>
+
+    <div id="container">
+        <div id="sidebar">
+            <div class="search-section">
+                <div class="filter-row">
+                    <select id="filter-region" onchange="zoomToRegion()">
+                        <option value="all">🇯🇵 เลือกโซน (Zoom Map)</option>
+                    </select>
+                </div>
+                <input type="text" id="search-box" class="search-box" placeholder="🔍 พิมพ์ชื่อสถานที่ หรือ 'Airport'..." onkeyup="handleSearchInput(event)"><div id="search-results"></div>
+            </div>
+            <div id="planner-area">
+                <div class="day-container"><div class="day-header day-bucket" onclick="toggleSection('bucket')"><span>📦 ตะกร้ากลาง <span id="arrow-bucket">▼</span></span><span class="day-stats" id="stats-bucket">0</span></div><div id="sec-bucket" class="list-content"><div id="list-bucket" class="place-list-dropzone" ondrop="drop(event,'bucket')" ondragover="allowDrop(event)"></div></div></div>
+                <div id="days-wrapper" style="display:flex;flex-direction:column;gap:10px;"></div>
+                <button class="btn-action" style="width:100%;padding:10px;background:#bdc3c7;color:#2c3e50;" onclick="addDay()">+ เพิ่มวันที่ (Add Day)</button><div style="height:30px;"></div>
+            </div>
+            <div class="budget-footer">รวมค่าเดินทาง: <span id="total-cost" style="color:#f1c40f;">0</span> ¥</div>
+        </div>
+        <div id="map">
+            <div id="map-placeholder" style="text-align:center;">
+                <h3>🗺️ รอโหลดแผนที่...</h3>
+                <p>กรุณากรอก API Key เพื่อแสดงผล</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATABASE ---
+        const rawDB = [
+            // AIRPORTS
+            {n:"Narita Airport",l:35.7719,g:140.3929,t:"A",r:"Tokyo",s:"Narita-Airport",d:90,tg:["Airport","Flight"],w:1},
+            {n:"Haneda Airport",l:35.5494,g:139.7798,t:"A",r:"Tokyo",s:"Haneda-Airport",d:90,tg:["Airport","Flight"],w:1},
+            {n:"New Chitose Airport",l:42.7752,g:141.6923,t:"A",r:"Hokkaido",s:"New-Chitose-Airport",d:60,tg:["Airport","Flight"],w:1},
+            {n:"Kansai Airport",l:34.4320,g:135.2304,t:"A",r:"Osaka",s:"Kansai-Airport",d:60,tg:["Airport","Flight"],w:1},
+            {n:"Fukuoka Airport",l:33.5859,g:130.4507,t:"A",r:"Kyushu",s:"Fukuoka-Airport",d:60,tg:["Airport","Flight"],w:1},
+            // HOTELS
+            {n:"APA Hotel Sapporo",l:43.0545,g:141.3550,t:"H",r:"Hokkaido",s:"Susukino",d:0,tg:["Hotel","Budget"],w:1},
+            {n:"Shinjuku Prince Hotel",l:35.6940,g:139.7005,t:"H",r:"Tokyo",s:"Shinjuku",d:0,tg:["Hotel","City"],w:1},
+            {n:"Swissotel Nankai",l:34.6637,g:135.5020,t:"H",r:"Osaka",s:"Namba",d:0,tg:["Hotel","Luxury"],w:1},
+            // SPOTS
+            {n:"Odori Park",l:43.0598,g:141.3479,t:"O",r:"Hokkaido",s:"Odori",d:60,tg:["Landmark","Park"],w:1},
+            {n:"Sapporo TV Tower",l:43.0611,g:141.3564,t:"I",r:"Hokkaido",s:"Odori",d:45,tg:["Landmark","View"],w:1},
+            {n:"Otaru Canal",l:43.1994,g:141.0016,t:"O",r:"Hokkaido",s:"Otaru",d:60,tg:["Romantic","Photo"],w:1},
+            {n:"Universal Studios",l:34.6654,g:135.4323,t:"O",r:"Osaka",s:"Universal-City",d:480,tg:["Mass","Theme Park"],w:1},
+            {n:"Dotonbori",l:34.6687,g:135.5012,t:"O",r:"Osaka",s:"Namba",d:120,tg:["Mass","Food","Nightlife"],w:1},
+            {n:"Sensoji Temple",l:35.7147,g:139.7966,t:"O",r:"Tokyo",s:"Asakusa",d:60,tg:["Mass","Landmark"],w:1},
+            {n:"Shibuya Crossing",l:35.6594,g:139.7005,t:"O",r:"Tokyo",s:"Shibuya",d:30,tg:["Mass","City"],w:1},
+            {n:"Tokyo DisneyLand",l:35.6329,g:139.8804,t:"O",r:"Tokyo",s:"Maihama",d:600,tg:["Theme Park","Family"],w:1},
+        ];
+
+        const REGION_VIEWS = {
+            "all": { lat: 36.0, lng: 138.0, zoom: 5 },
+            "Hokkaido": { lat: 43.5, lng: 142.5, zoom: 7 },
+            "Tokyo": { lat: 35.68, lng: 139.76, zoom: 10 },
+            "Osaka": { lat: 34.69, lng: 135.50, zoom: 11 },
+            "Kyoto": { lat: 35.01, lng: 135.76, zoom: 11 }
+        };
+
+        const placesDB = rawDB.map((p,i) => ({
+            id: 1000+i, name: p.n, lat: p.l, lng: p.g, 
+            type: p.t==="A"?"Airport": (p.t==="I"?"Indoor": p.t==="H"?"Hotel":"Outdoor"), 
+            region: p.r, station: p.s, duration: p.d, tags: p.tg, wheelchair: p.w===1, wait: p.q
+        }));
+
+        const stationDB={ "Odori":{line:"Metro"},"Sapporo":{line:"JR"},"Susukino":{line:"Metro"},"Otaru":{line:"JR"},"Namba":{line:"Metro"},"Universal-City":{line:"JR"},"Asakusa":{line:"Metro"},"Shibuya":{line:"JR"},"Maihama":{line:"JR"} };
+
+        let tripPlan = { bucket: [], days: [], daySettings: [] };
+        try { 
+            const saved = JSON.parse(localStorage.getItem("japanOmegaReal")); 
+            if(saved) {
+                if(Array.isArray(saved.days)) tripPlan.days = saved.days;
+                if(Array.isArray(saved.bucket)) tripPlan.bucket = saved.bucket;
+                if(Array.isArray(saved.daySettings)) tripPlan.daySettings = saved.daySettings;
+                while(tripPlan.daySettings.length < tripPlan.days.length) tripPlan.daySettings.push({startTime:"09:00"});
+            }
+        } catch(e){ localStorage.removeItem("japanOmegaReal"); tripPlan.days=[[],[],[]]; tripPlan.daySettings=[{startTime:"09:00"},{startTime:"09:00"},{startTime:"09:00"}]; }
+        
+        if(tripPlan.days.length === 0) { tripPlan.days=[[],[],[]]; tripPlan.daySettings=[{startTime:"09:00"},{startTime:"09:00"},{startTime:"09:00"}]; }
+
+        let map, markers=[], polyLines=[], searchMarkers=[], targetPlaceForModal=null, placesService;
+        const dayColors = ["#e74c3c","#3498db","#27ae60","#9b59b6","#e67e22","#34495e","#1abc9c","#f1c40f"];
+
+        // --- API KEY MANAGER ---
+        function checkApiKey() {
+            const key = localStorage.getItem("googleMapsKey");
+            if (key) {
+                loadScript(key);
+            } else {
+                document.getElementById("api-key-modal").style.display = "flex";
+            }
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById("input-api-key").value.trim();
+            if(key) {
+                localStorage.setItem("googleMapsKey", key);
+                document.getElementById("api-key-modal").style.display = "none";
+                loadScript(key);
+            } else {
+                alert("กรุณากรอก API Key");
+            }
+        }
+
+        function clearApiKey() {
+            if(confirm("ลบ API Key? (คุณจะต้องกรอกใหม่ในครั้งหน้า)")) {
+                localStorage.removeItem("googleMapsKey");
+                location.reload();
+            }
+        }
+
+        function loadScript(key) {
+            const script = document.createElement("script");
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&callback=initMap&language=th`;
+            script.async = true;
+            script.defer = true;
+            document.body.appendChild(script);
+        }
+
+        // Initialize Check
+        window.onload = () => {
+            initFilters(); 
+            renderApp();
+            document.getElementById("search-box").addEventListener("keyup", handleSearchInput);
+            checkApiKey(); // Start Key Check
+        };
+
+        async function initMap() {
+            const { Map } = await google.maps.importLibrary("maps");
+            const { PlacesService } = await google.maps.importLibrary("places");
+            
+            map = new Map(document.getElementById("map"), { zoom: 5, center: { lat: 36, lng: 138 }, mapId: "DEMO_MAP_ID" });
+            placesService = new PlacesService(map);
+            new google.maps.Polyline({ strokeColor: "#2980b9", strokeOpacity: 0.8, strokeWeight: 4, map: map });
+            
+            map.addListener("click", (e) => {
+                if (e.placeId) {
+                    e.stop();
+                    placesService.getDetails({ placeId: e.placeId }, (place, status) => {
+                        if (status === "OK") { openModal(convertGooglePlace(place)); }
+                    });
+                } else {
+                    const custom = {
+                        id: "C-" + Date.now(), name: "จุดปักหมุด", lat: e.latLng.lat(), lng: e.latLng.lng(),
+                        type: "Outdoor", region: "Custom", station: "Nearby", duration: 60, tags: ["Custom"], isGoogle: true
+                    };
+                    openModal(custom);
+                }
+            });
+        }
+
+        function initFilters() {
+            const rSel = document.getElementById("filter-region");
+            const regions = [...new Set(placesDB.map(p=>p.region))].sort();
+            regions.forEach(r => rSel.innerHTML += `<option value="${r}">${r}</option>`);
+        }
+
+        function zoomToRegion() {
+            const region = document.getElementById("filter-region").value;
+            if (REGION_VIEWS[region]) {
+                const view = REGION_VIEWS[region];
+                map.panTo({ lat: view.lat, lng: view.lng });
+                map.setZoom(view.zoom);
+            } else if (region !== "all") {
+                const bounds = new google.maps.LatLngBounds();
+                const regionPlaces = placesDB.filter(p => p.region === region);
+                if (regionPlaces.length > 0) {
+                    regionPlaces.forEach(p => bounds.extend({ lat: p.lat, lng: p.lng }));
+                    map.fitBounds(bounds);
+                }
+            } else { map.setZoom(5); map.setCenter({ lat: 36, lng: 138 }); }
+        }
+
+        async function handleSearchInput(e) {
+            const txt = document.getElementById("search-box").value.trim();
+            if (e.key === "Enter" && txt.length > 0) await performGoogleSearch(txt);
+            else performLocalSearch(txt);
+        }
+
+        function performLocalSearch(txt) {
+            const box = document.getElementById("search-results");
+            if(txt.length < 2) { box.style.display="none"; return; }
+            const res = placesDB.filter(p=>p.name.toLowerCase().includes(txt.toLowerCase())||p.tags.some(t=>t.toLowerCase().includes(txt.toLowerCase())));
+            renderSearchResults(res, false);
+        }
+
+        async function performGoogleSearch(query) {
+            const box = document.getElementById("search-results");
+            box.style.display = "block"; box.innerHTML = "<div style='padding:10px;text-align:center'>🔄 Google...</div>";
+            const { Place } = await google.maps.importLibrary("places");
+            const { places } = await Place.searchByText({ textQuery: query, fields: ['displayName', 'location', 'id', 'types'], maxResultCount: 5 });
+            if (places && places.length > 0) {
+                const converted = places.map(p => {
+                    let type = "Outdoor";
+                    if(p.types && (p.types.includes("lodging") || p.types.includes("hotel"))) type = "Hotel";
+                    if(p.types && (p.types.includes("airport"))) type = "Airport";
+                    return {
+                        id: "G-"+p.id, name: p.displayName, lat: p.location.lat(), lng: p.location.lng(),
+                        type: type, region: "Google", station: "Map", duration: type==="Hotel"?0:60, tags: ["Google"], isGoogle: true
+                    };
+                });
+                renderSearchResults(converted, true);
+            } else { box.innerHTML = "<div style='padding:10px;color:red'>❌ ไม่พบ</div>"; }
+        }
+
+        function convertGooglePlace(p) {
+            let type = "Outdoor";
+            if(p.types && (p.types.includes("lodging") || p.types.includes("hotel"))) type = "Hotel";
+            if(p.types && (p.types.includes("airport"))) type = "Airport";
+            return {
+                id: "G-" + (p.place_id || p.id), name: p.name, lat: p.geometry.location.lat(), lng: p.geometry.location.lng(),
+                type: type, region: "Google Map", station: "Nearby", duration: type==="Hotel"?0:60, tags: ["Google Pick"], isGoogle: true
+            };
+        }
+
+        function renderSearchResults(results, isGoogle) {
+            const box = document.getElementById("search-results");
+            box.style.display="block"; box.innerHTML="";
+            if(!results.length) { box.innerHTML="<div style='padding:10px'>ไม่พบ</div>"; return; }
+            if(isGoogle) box.innerHTML+="<div style='padding:5px;background:#e8f6f3;font-size:10px;color:#1abc9c'>🌐 Google Result</div>";
+            results.forEach(p=>{
+                const d=document.createElement("div"); d.className="result-item";
+                let icon = "📍";
+                if(p.type==="Hotel") icon="🏨"; if(p.type==="Airport") icon="✈️";
+                d.innerHTML=`<div class="res-name">${icon} ${p.name}</div><div class="res-sub">${p.region}</div>`;
+                d.onclick=()=>{
+                    openModal(p); box.style.display="none"; document.getElementById("search-box").value="";
+                    if(isGoogle){
+                        searchMarkers.forEach(m=>m.setMap(null)); searchMarkers=[];
+                        const m=new google.maps.Marker({position:{lat:p.lat,lng:p.lng},map:map,icon:{path:google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,scale:6,fillColor:"#9b59b6",fillOpacity:1,strokeColor:"white",strokeWeight:2}});
+                        searchMarkers.push(m); map.panTo(m.getPosition()); map.setZoom(14);
+                    }
+                };
+                box.appendChild(d);
+            });
+        }
+
+        function openModal(p) {
+            targetPlaceForModal = p;
+            document.getElementById("modal-place-name").innerText = `เพิ่ม "${p.name}" ไปที่...`;
+            const o = document.getElementById("modal-options");
+            o.innerHTML = `<button class="modal-btn btn-bucket" onclick="add('bucket')">📦 ตะกร้ากลาง</button>`;
+            tripPlan.days.forEach((_, i) => {
+                o.innerHTML += `<button class="modal-btn btn-day" style="background:${dayColors[i % 8]}" onclick="add(${i})">Day ${i + 1}</button>`;
+            });
+            document.getElementById("modal-overlay").style.display = "flex";
+        }
+
+        function closeModal() { document.getElementById("modal-overlay").style.display = "none"; targetPlaceForModal = null; }
+        function add(t) {
+            if (!targetPlaceForModal) return;
+            if (t === 'bucket') tripPlan.bucket.push({...targetPlaceForModal});
+            else tripPlan.days[t].push({...targetPlaceForModal});
+            if(targetPlaceForModal.isGoogle) { const exists = placesDB.find(x=>x.id===targetPlaceForModal.id); if(!exists) placesDB.push(targetPlaceForModal); }
+            save(); closeModal();
+        }
+
+        function save() { 
+             if(tripPlan.daySettings.length < tripPlan.days.length) {
+                while(tripPlan.daySettings.length < tripPlan.days.length) tripPlan.daySettings.push({startTime:"09:00"});
+             }
+            localStorage.setItem("japanOmegaReal", JSON.stringify(tripPlan)); renderApp(); 
+        }
+        function addDay() { tripPlan.days.push([]); tripPlan.daySettings.push({startTime:"09:00"}); save(); }
+        function resetAll() { if(confirm("ล้างทั้งหมด?")) { localStorage.removeItem("japanOmegaReal"); location.reload(); } }
+        function toggleSection(id) { document.getElementById(`sec-${id}`).classList.toggle("hidden"); }
+
+        function toggleSleep(dayIndex, placeIndex) {
+            tripPlan.days[dayIndex][placeIndex].isSleep = !tripPlan.days[dayIndex][placeIndex].isSleep;
+            save();
+        }
+
+        function updateStartTime(dayIndex, val) {
+            tripPlan.daySettings[dayIndex].startTime = val;
+            save();
+        }
+
+        function updateDuration(dayIndex, placeIndex, val) {
+            tripPlan.days[dayIndex][placeIndex].duration = parseInt(val) || 0;
+            save();
+        }
+
+        function updateFlightTime(dayIndex, placeIndex, type, val) {
+            if(type === 'dep') tripPlan.days[dayIndex][placeIndex].flightDep = val;
+            if(type === 'arr') tripPlan.days[dayIndex][placeIndex].flightArr = val;
+            if(type === 'land') tripPlan.days[dayIndex][placeIndex].flightLand = val;
+            save();
+        }
+
+        function updateMemo(dayIndex, placeIndex, val) {
+            tripPlan.days[dayIndex][placeIndex].memo = val;
+            save();
+        }
+        function toggleMemo(id) {
+            const el = document.getElementById(id);
+            el.style.display = el.style.display === "block" ? "none" : "block";
+        }
+
+        // --- EXPORT / IMPORT / COPY ---
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tripPlan));
+            const node = document.createElement('a');
+            node.setAttribute("href", dataStr);
+            node.setAttribute("download", "japan_plan.json");
+            document.body.appendChild(node); node.click(); node.remove();
+        }
+
+        function importData(input) {
+            const file = input.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    tripPlan = JSON.parse(e.target.result);
+                    save(); alert("โหลดข้อมูลสำเร็จ!");
+                } catch(err) { alert("ไฟล์ไม่ถูกต้อง"); }
+            };
+            reader.readAsText(file);
+        }
+
+        function copyToClipboard() {
+            let txt = "🇯🇵 Trip Plan Summary\n";
+            tripPlan.days.forEach((d, i) => {
+                txt += `\n📅 Day ${i+1}\n`;
+                let t = parseTime(tripPlan.daySettings[i].startTime);
+                d.forEach(p => {
+                    let timeStr = formatTime(t);
+                    if(p.type === 'Airport' && p.flightArr) timeStr = `🛬 ${p.flightArr}`;
+                    txt += `${timeStr} ${p.name} ${p.memo ? `(${p.memo})` : ''}\n`;
+                    t += (p.duration || 60) + 45; 
+                });
+            });
+            navigator.clipboard.writeText(txt).then(() => alert("คัดลอกลง Clipboard แล้ว!"));
+        }
+
+        function renderApp() {
+            renderL('bucket', tripPlan.bucket, 'list-bucket', 'stats-bucket');
+            const dw = document.getElementById("days-wrapper"); dw.innerHTML = "";
+            tripPlan.days.forEach((d, i) => {
+                const c = dayColors[i % 8];
+                const settings = tripPlan.daySettings[i] || {startTime:"09:00"};
+                const div = document.createElement("div"); div.className = "day-container";
+                div.innerHTML = `<div class="day-header" style="background:${c}" onclick="zoomToDay(${i})">
+                        <div style="display:flex;align-items:center;gap:5px;">
+                            <span>🗓️ Day ${i + 1}</span>
+                            <input type="time" class="time-start-input" value="${settings.startTime}" onchange="updateStartTime(${i}, this.value);event.stopPropagation()">
+                        </div>
+                        <div style="display:flex;align-items:center;">
+                            <button class="btn-route-day" onclick="openDayRoute(${i});event.stopPropagation()">🗺️ Route</button>
+                            <span onclick="toggleSection('d${i}');event.stopPropagation()" style="margin-right:10px;font-size:10px">▼</span>
+                            <span onclick="clearD(${i});event.stopPropagation()" style="font-size:10px">🗑️</span>
+                        </div>
+                    </div>
+                    <div id="sec-d${i}" class="list-content"><div id="list-d${i}" class="place-list-dropzone" ondrop="drop(event,${i})" ondragover="allowDrop(event)"></div></div>`;
+                dw.appendChild(div); renderL(i, d, `list-d${i}`, null, i);
+            });
+            updateMap();
+        }
+
+        function openDayRoute(i) {
+            const d = tripPlan.days[i];
+            
+            let startPlace = null;
+            if (i > 0) {
+                const prevDay = tripPlan.days[i-1];
+                if (prevDay.length > 0) {
+                    const checkedSleep = prevDay.find(p => p.isSleep);
+                    if (checkedSleep) startPlace = checkedSleep;
+                    else if (prevDay[prevDay.length-1].type === "Hotel") startPlace = prevDay[prevDay.length-1];
+                }
+            }
+
+            let endPlace = d.length > 0 ? d[d.length-1] : null;
+            const todaySleep = d.find(p => p.isSleep);
+            if(todaySleep && todaySleep !== endPlace) endPlace = todaySleep;
+
+            if(d.length === 0 && !startPlace) return alert("ไม่มีสถานที่ในวันนี้");
+            
+            const origin = startPlace ? `${startPlace.lat},${startPlace.lng}` : `${d[0].lat},${d[0].lng}`;
+            const dest = endPlace ? `${endPlace.lat},${endPlace.lng}` : `${d[d.length-1].lat},${d[d.length-1].lng}`;
+            
+            let midPoints = startPlace ? d : d.slice(1);
+            midPoints = midPoints.filter(p => p !== endPlace);
+            let waypoints = midPoints.length > 0 ? "&waypoints=" + midPoints.map(p => `${p.lat},${p.lng}`).join("|") : "";
+            
+            window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${waypoints}&travelmode=transit`, '_blank');
+        }
+
+        function parseTime(tStr) { if(!tStr) return null; const [h, m] = tStr.split(":").map(Number); return h * 60 + m; }
+        function formatTime(mins) { 
+            let h = Math.floor(mins / 60) % 24; let m = mins % 60; 
+            return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+        }
+
+        function renderL(did, items, eid, sid, rdi) {
+            const el = document.getElementById(eid); el.innerHTML = "";
+            if (sid) document.getElementById(sid).innerText = items.length;
+            
+            let currentTime = 540; 
+            if(rdi !== undefined) {
+                currentTime = parseTime(tripPlan.daySettings[rdi].startTime);
+            }
+            
+            let tc=0; const jr = document.getElementById("chk-jrpass").checked;
+
+            if (rdi !== undefined && rdi > 0) {
+                const prevDay = tripPlan.days[rdi-1];
+                if (prevDay.length > 0) {
+                    let lastPlace = prevDay.find(p => p.isSleep);
+                    if (!lastPlace && prevDay[prevDay.length-1].type === "Hotel") lastPlace = prevDay[prevDay.length-1];
+
+                    if (lastPlace && items.length > 0) {
+                        const firstSpot = items[0];
+                        const dist = getDist(lastPlace.lat, lastPlace.lng, firstSpot.lat, firstSpot.lng);
+                        let mode="transit", label="🚇 จากโรงแรม", time=30, cost=200;
+                        if(dist < 1.0) { mode="walking"; label="🚶 เดินมา"; time=Math.round(dist*15); cost=0; }
+                        
+                        currentTime += time; 
+                        tc += cost;
+                        
+                        const dirUrl = `https://www.google.com/maps/dir/?api=1&origin=${lastPlace.lat},${lastPlace.lng}&destination=${firstSpot.lat},${firstSpot.lng}&travelmode=${mode}`;
+
+                        const conn = `<div class="connector-wrapper connector-start">
+                             <div class="hotel-start-label">💤 ตื่นที่: ${lastPlace.name}</div>
+                            <div style="display:flex;align-items:center;gap:5px;">
+                                <a href="${dirUrl}" target="_blank" class="nav-btn">${label} (${time} น.) ➤</a>
+                                <span style="margin-left:auto;font-weight:bold;color:${cost===0?'#f1c40f':'#555'}">${cost===0?'FREE':'¥'+cost}</span>
+                            </div>
+                        </div>`;
+                        el.appendChild(htmlToEl(conn));
+                    }
+                }
+            }
+
+            items.forEach((p, x) => {
+                let overrideTime = false;
+                
+                if (rdi !== undefined && x === 0 && p.type === "Airport" && p.flightLand) {
+                     currentTime = parseTime(p.flightLand);
+                     overrideTime = true;
+                }
+
+                if (rdi !== undefined && x > 0) {
+                    const prev = items[x - 1];
+                    const dist = getDist(prev.lat, prev.lng, p.lat, p.lng);
+                    
+                    let mode="transit", label="🚇 รถไฟ", time=45, cost=250, isFlight=false;
+
+                    if (prev.type === "Airport" && p.type === "Airport") {
+                        isFlight = true;
+                        label = "✈️ บิน";
+                        if (p.flightArr && p.flightDep) {
+                             const depTime = parseTime(p.flightDep);
+                             const arrTime = parseTime(p.flightArr);
+                             time = arrTime - depTime;
+                             currentTime = arrTime; 
+                             overrideTime = true;
+                             cost = 10000;
+                        } else {
+                            time = 100; cost = 10000; currentTime += time;
+                        }
+                        mode = "flying";
+                    } else {
+                        if(dist < 1.5) { mode="walking"; label="🚶 เดิน"; time=Math.round(dist*15); cost=0; }
+                        else if(dist > 50 || prev.region !== p.region) { label="🚅 ชินคันเซ็น"; time=180; cost=14000; }
+                        currentTime += time;
+                    }
+
+                    if(jr && !isFlight && (label.includes("รถไฟ") || label.includes("ชินคันเซ็น"))) cost=0;
+                    tc += cost;
+
+                    const dirUrl = `https://www.google.com/maps/dir/?api=1&origin=${prev.lat},${prev.lng}&destination=${p.lat},${p.lng}&travelmode=transit`;
+                    
+                    const connClass = isFlight ? "connector-flight" : "connector-wrapper";
+                    const btnClass = isFlight ? "nav-btn flight" : "nav-btn";
+
+                    let flightInputs = "";
+                    if(isFlight) {
+                        flightInputs = `
+                        <div class="flight-time-row">
+                            🛫 ออก <input type="time" class="flight-input" value="${p.flightDep||''}" onchange="updateFlightTime(${did},${x},'dep',this.value)"> 
+                            ➡ 🛬 ถึง <input type="time" class="flight-input" value="${p.flightArr||''}" onchange="updateFlightTime(${did},${x},'arr',this.value)">
+                        </div>`;
+                    }
+
+                    const conn = `<div class="${connClass} connector-wrapper">
+                        <div style="display:flex;align-items:center;gap:5px;">
+                            <a href="${dirUrl}" target="_blank" class="${btnClass}">${label} ${!isFlight ? `(${time} น.)` : ''} ➤</a>
+                            <span style="margin-left:auto;font-weight:bold;color:${cost===0?'#f1c40f':'#555'}">${cost===0?'FREE':'¥'+cost}</span>
+                        </div>
+                        ${flightInputs}
+                        ${!isFlight && stationDB[p.station] ? `<div class="route-detail">🚉 สถานี: ${p.station} (${stationDB[p.station].line})</div>` : ''}
+                    </div>`;
+                    el.appendChild(htmlToEl(conn));
+                }
+
+                const d = document.createElement("div"); 
+                const c = document.createElement("div"); 
+                
+                let typeClass = "outdoor";
+                if(p.type==="Indoor") typeClass="indoor";
+                if(p.type==="Hotel") typeClass="hotel";
+                if(p.type==="Airport") typeClass="airport";
+                if(p.isSleep) typeClass += " sleep-here";
+
+                c.className = `place-card ${typeClass}`;
+                c.draggable = true;
+                c.ondragstart = (e) => drag(e, did, x);
+                c.onclick = (e) => { e.stopPropagation(); map.panTo({lat:p.lat, lng:p.lng}); map.setZoom(15); };
+                
+                const arriveStr = formatTime(currentTime);
+                if (!overrideTime) currentTime += (p.duration || 60);
+                const departStr = formatTime(currentTime);
+
+                let th=""; 
+                if(rdi !== undefined){ 
+                    th=`<div class="time-col">
+                        <div class="time-display">${arriveStr}</div>
+                        <div style="font-size:8px">▼</div>
+                        <div class="time-display">${!overrideTime ? departStr : arriveStr}</div>
+                    </div>`; 
+                }
+                
+                const tags = (p.tags||[]).map(t=>`<span class="tag">${t}</span>`).join("");
+                
+                let chk = "";
+                if(rdi !== undefined) {
+                    chk = `<label class="sleep-checkbox-label ${p.isSleep?'checked':''}" onclick="event.stopPropagation()">
+                        <input type="checkbox" ${p.isSleep?'checked':''} onchange="toggleSleep(${did},${x})" style="display:none;"> 🛌 นอนที่นี่
+                    </label>`;
+                }
+
+                let durInput = "";
+                if(rdi !== undefined) {
+                    if (p.type === 'Airport' && x === 0) {
+                         durInput = `<div class="flight-time-row">🛬 Land: <input type="time" class="flight-input" value="${p.flightLand||''}" onchange="updateFlightTime(${did},${x},'land',this.value)" onclick="event.stopPropagation()"></div>`;
+                    } else if (!overrideTime) {
+                        durInput = `<div class="duration-wrapper">⏳ <input type="number" class="duration-edit" value="${p.duration||0}" onchange="updateDuration(${did},${x},this.value)" onclick="event.stopPropagation()"> น.</div>`;
+                    }
+                }
+
+                let qB=""; if(p.wait){ let c="q-green"; if(p.wait==="Book")c="q-black"; else if(p.wait==="Extreme")c="q-red"; qB=`<span class="q-badge ${c}">${p.wait}</span>`; }
+
+                const noteBtn = rdi !== undefined ? `<span class="btn-memo ${p.memo?'has-note':''}" onclick="toggleMemo('memo-${did}-${x}');event.stopPropagation()">📝</span>` : '';
+
+                c.innerHTML = `${th}
+                <div class="info-col">
+                    <div class="card-title">
+                        <span>${p.type==='Hotel'?'🏨 ':''}${p.type==='Airport'?'✈️ ':''}${p.name} ${qB} ${noteBtn}</span>
+                        <span onclick="rem('${did}',${x});event.stopPropagation()" style="color:red;cursor:pointer">✕</span>
+                    </div>
+                    <div class="card-sub">📍 ${p.region} ${durInput}</div>
+                    <div style="margin-top:4px;display:flex;justify-content:space-between;align-items:center;">
+                        <div>${tags}</div>
+                        ${chk}
+                    </div>
+                    ${rdi !== undefined ? `<textarea id="memo-${did}-${x}" class="memo-area" placeholder="บันทึก..." onchange="updateMemo(${did},${x},this.value)" onclick="event.stopPropagation()">${p.memo||''}</textarea>` : ''}
+                </div>`;
+                d.appendChild(c); el.appendChild(d);
+            });
+
+            if (rdi !== undefined && items.length > 0) {
+                const sleepItem = items.find(p => p.isSleep);
+                const lastItem = items[items.length-1];
+                
+                if (sleepItem && sleepItem !== lastItem) {
+                    const dist = getDist(lastItem.lat, lastItem.lng, sleepItem.lat, sleepItem.lng);
+                    let mode="transit", label="🚇 กลับโรงแรม", time=45, cost=250;
+                    if(dist < 1.5) { mode="walking"; label="🚶 เดินกลับ"; time=Math.round(dist*15); cost=0; }
+                    
+                    currentTime += time;
+                    tc += cost;
+                    
+                    const dirUrl = `https://www.google.com/maps/dir/?api=1&origin=${lastItem.lat},${lastItem.lng}&destination=${sleepItem.lat},${sleepItem.lng}&travelmode=${mode}`;
+                    
+                    const ghost = `<div class="connector-wrapper connector-return">
+                        <div style="display:flex;align-items:center;gap:5px;">
+                            <a href="${dirUrl}" target="_blank" class="nav-btn" style="background:#e74c3c">🔙 ${label} (${time} น.) ➤</a>
+                            <span style="margin-left:auto;font-weight:bold;color:${cost===0?'#f1c40f':'#555'}">${cost===0?'FREE':'¥'+cost}</span>
+                        </div>
+                        <div class="route-detail">ถึงที่พัก: <b>${formatTime(currentTime)}</b></div>
+                    </div>`;
+                    el.appendChild(htmlToEl(ghost));
+                }
+            }
+            if(rdi!==undefined) document.getElementById("total-cost").innerText = tc.toLocaleString();
+        }
+
+        function htmlToEl(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; }
+
+        function getDist(lat1,lon1,lat2,lon2) {
+            const R=6371; const dLat=(lat2-lat1)*Math.PI/180; const dLon=(lon2-lon1)*Math.PI/180;
+            const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+        let dragItem=null, srcDay=null, srcIdx=null;
+        function drag(e,d,i){srcDay=d;srcIdx=i;dragItem=(d==='bucket'?tripPlan.bucket:tripPlan.days[d])[i];}
+        function allowDrop(e){e.preventDefault();}
+        function drop(e,tgt){ e.preventDefault(); if(srcDay==='bucket')tripPlan.bucket.splice(srcIdx,1); else tripPlan.days[srcDay].splice(srcIdx,1); if(tgt==='bucket')tripPlan.bucket.push(dragItem); else tripPlan.days[tgt].push(dragItem); save(); }
+        function rem(d,i){if(d==='bucket')tripPlan.bucket.splice(i,1);else tripPlan.days[d].splice(i,1);save();}
+        function clearD(i){if(confirm("Clear?")){tripPlan.days[i]=[]; tripPlan.daySettings[i]={startTime:"09:00"}; save();}}
+        function zoomToDay(i){const b=new google.maps.LatLngBounds();if(!tripPlan.days[i].length)return;tripPlan.days[i].forEach(p=>b.extend({lat:p.lat,lng:p.lng}));map.fitBounds(b);}
+        
+        function updateMap(){
+            markers.forEach(m=>m.setMap(null)); markers=[]; polyLines.forEach(p=>p.setMap(null)); polyLines=[];
+            const b = new google.maps.LatLngBounds();
+            tripPlan.bucket.forEach(p=>{
+                const m=new google.maps.Marker({position:{lat:p.lat,lng:p.lng},map:map,icon:{path:google.maps.SymbolPath.CIRCLE,scale:5,fillColor:"#7f8c8d",fillOpacity:1,strokeColor:"white",strokeWeight:2}});
+                m.addListener("click",()=>{map.panTo(m.getPosition());map.setZoom(15)}); markers.push(m); b.extend(m.getPosition());
+            });
+            tripPlan.days.forEach((d,i)=>{
+                const c=dayColors[i%8], path=[];
+                d.forEach((p,x)=>{
+                    let iconPath = google.maps.SymbolPath.CIRCLE;
+                    let scale = 8;
+                    let color = c;
+                    if(p.type === 'Hotel') { scale = 6; color="#2c3e50"; }
+                    if(p.type === 'Airport') { scale = 9; color="#9b59b6"; iconPath = google.maps.SymbolPath.FORWARD_CLOSED_ARROW; }
+
+                    const m=new google.maps.Marker({
+                        position:{lat:p.lat,lng:p.lng},
+                        map:map,
+                        label: (p.type==='Hotel' || p.type==='Airport') ? {text:p.type[0], color:"white", fontSize:"9px"} : {text:(x+1)+"",color:"white",fontSize:"10px"},
+                        icon:{
+                            path: iconPath, scale: scale, fillColor: color, fillOpacity:1, strokeColor:"white", strokeWeight:2
+                        }
+                    });
+                    m.addListener("click",()=>{map.panTo(m.getPosition());map.setZoom(15)}); markers.push(m); path.push(m.getPosition()); b.extend(m.getPosition());
+                });
+                if(path.length>1) polyLines.push(new google.maps.Polyline({path:path,strokeColor:c,strokeOpacity:0.8,strokeWeight:4,map:map}));
+            });
+            if(!b.isEmpty() && searchMarkers.length===0) map.fitBounds(b);
+        }
+    </script>
+</body>
+</html>
